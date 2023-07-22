@@ -1,0 +1,7 @@
+langchain
+openai
+tiktoken
+supabase
+PyMuPDF
+qdrant-client
+python-dotenv
