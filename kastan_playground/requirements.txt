@@ -5,3 +5,5 @@ supabase
 PyMuPDF
 qdrant-client
 python-dotenv
+codeinterpreterapi
+pygithub
