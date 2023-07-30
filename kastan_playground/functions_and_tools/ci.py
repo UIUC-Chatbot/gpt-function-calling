@@ -13,9 +13,7 @@ async def main():
   await session.astart()
 
   # generate a response based on user input
-  response = await session.generate_response(
-    "Plot the bitcoin chart of 2023 YTD"
-  )
+  response = await session.generate_response("Plot the bitcoin chart of 2023 YTD")
 
   # output the response (text + image)
   print("AI: ", response.content)
@@ -24,20 +22,19 @@ async def main():
 
   # terminate the session
   await session.astop()
-  
+
+
 async def dataset_analysis():
   # context manager for auto start/stop of the session
   async with CodeInterpreterSession(openai_api_key=os.getenv('OPENAI_API_KEY')) as session:
     # define the user request
     user_request = "Analyze this dataset and plot something interesting about it."
     files = [
-      File.from_path("iris.csv"),
+        File.from_path("iris.csv"),
     ]
 
     # generate the response
-    response = await session.generate_response(
-        user_request, files=files
-    )
+    response = await session.generate_response(user_request, files=files)
 
     # output to the user
     print("AI: ", response.content)

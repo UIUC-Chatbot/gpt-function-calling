@@ -7,7 +7,6 @@ In Notebooks, since they have their own eventloop:
   nest_asyncio.apply()
 '''
 
-
 import asyncio
 import os
 
@@ -29,9 +28,10 @@ from ML_for_Bio.tools import get_docstore_agent, get_shell_tool
 
 load_dotenv(override=True, dotenv_path='../.env')
 
-os.environ["LANGCHAIN_TRACING"] = "true" # If you want to trace the execution of the program, set to "true"
+os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution of the program, set to "true"
 langchain.debug = True
 VERBOSE = True
+
 
 def get_human_input() -> str:
   """Placeholder for Slack input from user."""
@@ -49,23 +49,26 @@ def get_human_input() -> str:
 
 
 async def main(llm=None, tools=None, memory=None):
-  
+
   agent_chain = initialize_agent(
-    tools, 
-    llm, 
-    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, 
-    verbose=VERBOSE,
-    handle_parsing_errors=True, # or pass a function that accepts the error and returns a string
-    memory=memory, 
-    agent_kwargs = {
-      "memory_prompts": [chat_history],
-      "input_variables": ["input", "agent_scratchpad", "chat_history"]
-    }
-  )
-  
+      tools,
+      llm,
+      agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+      verbose=VERBOSE,
+      handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
+      memory=memory,
+      agent_kwargs={
+          "memory_prompts": [chat_history],
+          "input_variables": ["input", "agent_scratchpad", "chat_history"]
+      })
+
   # response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
-  response = await agent_chain.arun(input="Browse to https://lumetta.web.engr.illinois.edu/120-binary/120-binary.html and complete the first challenge using the keyboard to enter information, please.")
+  response = await agent_chain.arun(
+      input=
+      "Browse to https://lumetta.web.engr.illinois.edu/120-binary/120-binary.html and complete the first challenge using the keyboard to enter information, please."
+  )
   print(response)
+
 
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation
@@ -73,15 +76,14 @@ async def main(llm=None, tools=None, memory=None):
 # 3. Propose a change to the code and commit it into a new branch on github
 
 if __name__ == "__main__":
-  # LLM 
-  llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=3, request_timeout=60 * 3) # type: ignore
+  # LLM
+  llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=3, request_timeout=60 * 3)  # type: ignore
 
   # TOOLS
   tools = get_tools(llm)
-  
-  # MEMORY 
+
+  # MEMORY
   chat_history = MessagesPlaceholder(variable_name="chat_history")
   memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-  
-  
+
   asyncio.run(main(llm=llm, tools=tools, memory=memory))
