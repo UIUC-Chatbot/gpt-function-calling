@@ -22,6 +22,7 @@ os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution o
 langchain.debug = True
 VERBOSE = True
 
+
 def get_docstore_agent(docstore: Docstore | None = None):
   """This returns an agent. Usage of this agent: react.run(question)"""
   if docstore is None:

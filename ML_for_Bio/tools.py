@@ -44,7 +44,6 @@ VERBOSE = True
 
 #   tools: list[BaseTool] = browser_tools + human_tools + [shell]
 #   return tools
-
 async def get_tools_async(llm, sync=False):
   '''Main function to assemble tools for ML for Bio project.'''
   async_browser = create_async_playwright_browser()
@@ -55,11 +54,13 @@ async def get_tools_async(llm, sync=False):
   tools: list[BaseTool] = human_tools + browser_tools + [shell]
   return tools
 
+
 def get_tools(llm, sync=False):
   loop = asyncio.new_event_loop()
   tools = loop.run_until_complete(get_tools_async(llm, sync))
   loop.close()
   return tools
+
 
 ################# TOOLS ##################
 def get_shell_tool():
@@ -67,6 +68,7 @@ def get_shell_tool():
   Human approval on certain tools only: https://python.langchain.com/docs/modules/agents/tools/human_approval#configuring-human-approval
   '''
   return ShellTool(callbacks=[HumanApprovalCallbackHandler(should_check=_should_check, approve=_approve)])
+
 
 ############# HELPERS ################
 def _should_check(serialized_obj: dict) -> bool:
@@ -98,6 +100,5 @@ def get_human_input() -> str:
     contents.append(line)
   return "\n".join(contents)
 
-
-# Agent to search docs and pull out helpful sections, code & examples
+  # Agent to search docs and pull out helpful sections, code & examples
   docs_agent = get_docstore_agent()

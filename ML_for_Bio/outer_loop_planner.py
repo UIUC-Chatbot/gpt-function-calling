@@ -39,6 +39,7 @@ os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution o
 langchain.debug = True
 VERBOSE = True
 
+
 async def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
 
   agent_chain = initialize_agent(
@@ -64,27 +65,30 @@ def run_in_new_thread(main, llm, tools, memory, prompt):
   loop.run_until_complete(main(llm=llm, tools=tools, memory=memory, prompt=prompt))
   loop.close()
 
+
 # async def main_async(llm, tools, memory, prompt):
 #   async_browser = await create_async_playwright_browser()
 #   browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
 #   tools += browser_toolkit.get_tools()
 #   await main(llm=llm, tools=tools, memory=memory, prompt=prompt)
 
+
 def main_sync(llm, memory, prompt):
   tools = get_tools(llm)
   t = threading.Thread(target=run_in_new_thread, args=(main, llm, tools, memory, prompt))
   t.start()
   t.join()
+
+
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation
 # 2. collect relevant code files from github
 # 3. Propose a change to the code and commit it into a new branch on github
 
-# Input: I ask it to write some code in a specific library (Langchain). It writes it. 
-# 1. Find docs 
+# Input: I ask it to write some code in a specific library (Langchain). It writes it.
+# 1. Find docs
 # 2. Write code
 #   a. just return code or Decide if it's reasonable to execute & debug OR
-
 
 if __name__ == "__main__":
   # LLM
@@ -96,9 +100,9 @@ if __name__ == "__main__":
   # MEMORY
   chat_history = MessagesPlaceholder(variable_name="chat_history")
   memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-  
+
   # prompt = "Browse to https://lumetta.web.engr.illinois.edu/120-binary/120-binary.html and complete the first challenge using the keyboard to enter information, please."
-  
+
   prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
-  
+
   main_sync(llm=llm, memory=memory, prompt=prompt)
