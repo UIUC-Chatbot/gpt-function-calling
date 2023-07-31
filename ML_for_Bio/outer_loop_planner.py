@@ -54,12 +54,10 @@ from langchain_experimental.plan_and_execute.planners.chat_planner import \
 
 
 class OuterLoopPlanner:
-  
+
   def __init__(self):
     print("Before qdrant")
-    self.qdrant_client = QdrantClient(
-          url=os.getenv('QDRANT_URL'),
-          api_key=os.getenv('QDRANT_API_KEY'))
+    self.qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
 
     print("Before creating vectorstore")
     self.langchain_docs_vectorstore = Qdrant(
@@ -72,25 +70,26 @@ class OuterLoopPlanner:
         client=self.qdrant_client,
         collection_name=os.getenv('QDRANT_LANGCHAIN_DOCS'),  # type: ignore
         embeddings=OpenAIEmbeddings())  # type: ignore
-  
+
     print("after __init__")
     # todo: try babyagi
     # BabyAGI()
-    
+
   def autogpt_babyagi(self, llm: BaseChatModel, tools: List[BaseTool], prompt: str, memory=None):
-    
+
     # langchain_retriever = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4-0613'), chain_type="stuff", retriever=self.langchain_docs_vectorstore.as_retriever())
-    
+
     autogpt = AutoGPT.from_llm_and_tools(
-      ai_name='coding assistant',
-      ai_role='ML engineer',
-      tools=tools,
-      llm=llm,
-      human_in_the_loop=True,
-      memory=self.langchain_docs_vectorstore.as_retriever(),
+        ai_name='coding assistant',
+        ai_role='ML engineer',
+        tools=tools,
+        llm=llm,
+        human_in_the_loop=True,
+        memory=self.langchain_docs_vectorstore.as_retriever(),
     )
     goals: List[str] = [prompt]
     autogpt.run(goals=goals)
+
 
 def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
   input = {'input': prompt}
@@ -193,8 +192,7 @@ if __name__ == "__main__":
 
   # main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
-  # vectorstore 
-  
-  
+  # vectorstore
+
   o = OuterLoopPlanner()
   o.autogpt_babyagi(llm=llm, tools=tools, prompt=prompt)
