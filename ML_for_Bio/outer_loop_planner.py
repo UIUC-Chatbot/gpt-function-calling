@@ -38,7 +38,6 @@ os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution o
 langchain.debug = True
 VERBOSE = True
 
-
 # async def async_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
 # '''WORK IN PROGRESS'''
 #   agent_chain = initialize_agent(
@@ -75,7 +74,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
       max_execution_time=None,
       early_stopping_method='generate',
       memory=memory,
-      trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
+      trim_intermediate_steps=3,  # TODO: Investigate this undocumented feature
       agent_kwargs={
           "memory_prompts": [chat_history],
           "input_variables": ["input", "agent_scratchpad", "chat_history"]
@@ -85,6 +84,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
   response = agent_chain.run(input=prompt)
   print(response)
 
+
 # if __name__ == "__main__":
 #   # LLM
 #   llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=20, request_timeout=60 * 3)  # type: ignore
@@ -92,20 +92,17 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
 #   # TOOLS
 #   tools = get_tools(llm, sync=True)
 
-
 # async def main_async(llm, tools, memory, prompt):
 #   async_browser = await create_async_playwright_browser()
 #   browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
 #   tools += browser_toolkit.get_tools()
 #   await main(llm=llm, tools=tools, memory=memory, prompt=prompt)
 
-
 # def main_sync(llm, memory, prompt):
 #   tools = get_tools(llm)
 #   t = threading.Thread(target=run_in_new_thread, args=(main, llm, tools, memory, prompt))
 #   t.start()
 #   t.join()
-
 
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation

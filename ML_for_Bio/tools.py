@@ -25,7 +25,6 @@ os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution o
 langchain.debug = True
 VERBOSE = True
 
-
 ### MAIN ###
 # def get_tools(llm, sync=False):
 #   '''Main function to assemble tools for ML for Bio project.'''
@@ -43,6 +42,7 @@ VERBOSE = True
 
 #   shell = get_shell_tool()
 
+
 #   tools: list[BaseTool] = browser_tools + human_tools + [shell]
 #   return tools
 def get_tools(llm, sync=False):
@@ -55,7 +55,7 @@ def get_tools(llm, sync=False):
     # TODO work in progress... not functional yet.
     async_browser = create_async_playwright_browser()
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-  
+
   browser_tools = browser_toolkit.get_tools()
   human_tools = load_tools(["human"], llm=llm, input_func=get_human_input)
   shell = get_shell_tool()
