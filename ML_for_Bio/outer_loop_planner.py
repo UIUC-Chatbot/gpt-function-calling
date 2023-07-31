@@ -38,29 +38,41 @@ os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution o
 langchain.debug = True
 VERBOSE = True
 
-# async def async_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
-# '''WORK IN PROGRESS'''
-#   agent_chain = initialize_agent(
-#       tools,
-#       llm,
-#       agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-#       verbose=VERBOSE,
-#       handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
-#       memory=memory,
-#       agent_kwargs={
-#           "memory_prompts": [chat_history],
-#           "input_variables": ["input", "agent_scratchpad", "chat_history"]
-#       })
-#
-#    response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
-#    response = await agent_chain.arun(input=prompt)
-#    print(response)
+from langchain_experimental.plan_and_execute.agent_executor import \
+    PlanAndExecute
+from langchain_experimental.plan_and_execute.executors.agent_executor import \
+    load_agent_executor
+# Load an agent executor.
+from langchain_experimental.plan_and_execute.planners.chat_planner import \
+    load_chat_planner
 
-# def main_async(llm, tools, memory, prompt):
-#   async_browser = create_async_playwright_browser()
-#   browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-#   tools += browser_toolkit.get_tools()
-#   asyncio.run(main(llm=llm, tools=tools, memory=memory, prompt=prompt))
+
+def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
+  input = {'input': prompt}
+  planner = load_chat_planner(llm)
+  executor = load_agent_executor(
+    llm=llm,
+    tools=list(tools),
+    verbose=True,
+    include_task_in_prompt=False,
+    )
+  
+  agent = PlanAndExecute(
+    planner=planner,
+    executor=executor,
+  )
+  response = agent.run(input=input)
+  print(f"👇FINAL ANSWER 👇\n{response}")
+      # handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
+      # max_iterations=30,
+      # max_execution_time=None,
+      # early_stopping_method='generate',
+      # memory=memory,
+      # trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
+      # agent_kwargs={
+      #     "memory_prompts": [chat_history],
+      #     "input_variables": ["input", "agent_scratchpad", "chat_history"]
+      # })
 
 
 def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
@@ -82,8 +94,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
 
   # response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
   response = agent_chain.run(input=prompt)
-  print(response)
-
+  print(f"👇FINAL ANSWER 👇\n{response}")
 
 # if __name__ == "__main__":
 #   # LLM
@@ -131,4 +142,5 @@ if __name__ == "__main__":
   # prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
   prompt = "Please find the Python docs for LangChain to help you write an example of a Retrieval QA chain, or anything like that which can answer questions against a corpus of documents. Return just a single example in Python, please."
 
-  main(llm=llm, tools=tools, memory=memory, prompt=prompt)
+  # main(llm=llm, tools=tools, memory=memory, prompt=prompt)
+  experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
