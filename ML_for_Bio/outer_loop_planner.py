@@ -51,28 +51,28 @@ def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory,
   input = {'input': prompt}
   planner = load_chat_planner(llm)
   executor = load_agent_executor(
-    llm=llm,
-    tools=list(tools),
-    verbose=True,
-    include_task_in_prompt=False,
-    )
-  
+      llm=llm,
+      tools=list(tools),
+      verbose=True,
+      include_task_in_prompt=False,
+  )
+
   agent = PlanAndExecute(
-    planner=planner,
-    executor=executor,
+      planner=planner,
+      executor=executor,
   )
   response = agent.run(input=input)
   print(f"👇FINAL ANSWER 👇\n{response}")
-      # handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
-      # max_iterations=30,
-      # max_execution_time=None,
-      # early_stopping_method='generate',
-      # memory=memory,
-      # trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
-      # agent_kwargs={
-      #     "memory_prompts": [chat_history],
-      #     "input_variables": ["input", "agent_scratchpad", "chat_history"]
-      # })
+  # handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
+  # max_iterations=30,
+  # max_execution_time=None,
+  # early_stopping_method='generate',
+  # memory=memory,
+  # trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
+  # agent_kwargs={
+  #     "memory_prompts": [chat_history],
+  #     "input_variables": ["input", "agent_scratchpad", "chat_history"]
+  # })
 
 
 def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
@@ -95,6 +95,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
   # response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
   response = agent_chain.run(input=prompt)
   print(f"👇FINAL ANSWER 👇\n{response}")
+
 
 # if __name__ == "__main__":
 #   # LLM
