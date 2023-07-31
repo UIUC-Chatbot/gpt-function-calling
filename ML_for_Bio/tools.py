@@ -16,6 +16,7 @@ from langchain.tools.base import BaseTool
 from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
 from langchain.tools.playwright.utils import create_async_playwright_browser
+from langchain.tools.python.tool import PythonREPLTool
 from llama_hub.github_repo import GithubClient, GithubRepositoryReader
 
 load_dotenv(override=True, dotenv_path='../.env')
@@ -46,12 +47,18 @@ VERBOSE = True
 #   return tools
 async def get_tools_async(llm, sync=False):
   '''Main function to assemble tools for ML for Bio project.'''
-  async_browser = create_async_playwright_browser()
-  browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+  browser_toolkit = None
+  if sync:
+    sync_browser = create_sync_playwright_browser()
+    browser_toolkit = PlayWrightBrowserToolkit.from_browser(sync_browser=sync_browser)
+  else:
+    async_browser = create_async_playwright_browser()
+    browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+  
   browser_tools = browser_toolkit.get_tools()
   human_tools = load_tools(["human"], llm=llm, input_func=get_human_input)
   shell = get_shell_tool()
-  tools: list[BaseTool] = human_tools + browser_tools + [shell]
+  tools: list[BaseTool] = human_tools + browser_tools + [shell] + [PythonREPLTool()]
   return tools
 
 

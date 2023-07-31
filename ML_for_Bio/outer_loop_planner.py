@@ -1,5 +1,4 @@
 '''
-
 ## USAGE
 
 In Notebooks, since they have their own eventloop:
@@ -42,28 +41,58 @@ VERBOSE = True
 
 async def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
 
+# async def async_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
+# '''WORK IN PROGRESS'''
+#   agent_chain = initialize_agent(
+#       tools,
+#       llm,
+#       agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+#       verbose=VERBOSE,
+#       handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
+#       memory=memory,
+#       agent_kwargs={
+#           "memory_prompts": [chat_history],
+#           "input_variables": ["input", "agent_scratchpad", "chat_history"]
+#       })
+#
+#    response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
+#    response = await agent_chain.arun(input=prompt)
+#    print(response)
+
+# def main_async(llm, tools, memory, prompt):
+#   async_browser = create_async_playwright_browser()
+#   browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+#   tools += browser_toolkit.get_tools()
+#   asyncio.run(main(llm=llm, tools=tools, memory=memory, prompt=prompt))
+
+
+def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
   agent_chain = initialize_agent(
       tools,
       llm,
       agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
       verbose=VERBOSE,
       handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
+      max_iterations=30,
+      max_execution_time=None,
+      early_stopping_method='generate',
       memory=memory,
+      trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
       agent_kwargs={
           "memory_prompts": [chat_history],
           "input_variables": ["input", "agent_scratchpad", "chat_history"]
       })
 
   # response = await agent_chain.arun(input="Ask the user what they're interested in learning about on Langchain, then Browse to blog.langchain.dev and summarize the text especially whatever is relevant to the user, please.")
-  response = await agent_chain.arun(input=prompt)
+  response = agent_chain.run(input=prompt)
   print(response)
 
+if __name__ == "__main__":
+  # LLM
+  llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=20, request_timeout=60 * 3)  # type: ignore
 
-def run_in_new_thread(main, llm, tools, memory, prompt):
-  loop = asyncio.new_event_loop()
-  asyncio.set_event_loop(loop)
-  loop.run_until_complete(main(llm=llm, tools=tools, memory=memory, prompt=prompt))
-  loop.close()
+  # TOOLS
+  tools = get_tools(llm, sync=True)
 
 
 # async def main_async(llm, tools, memory, prompt):
