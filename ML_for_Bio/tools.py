@@ -45,13 +45,14 @@ VERBOSE = True
 
 #   tools: list[BaseTool] = browser_tools + human_tools + [shell]
 #   return tools
-async def get_tools_async(llm, sync=False):
+def get_tools(llm, sync=False):
   '''Main function to assemble tools for ML for Bio project.'''
   browser_toolkit = None
   if sync:
     sync_browser = create_sync_playwright_browser()
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(sync_browser=sync_browser)
   else:
+    # TODO work in progress... not functional yet.
     async_browser = create_async_playwright_browser()
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
   
@@ -62,11 +63,11 @@ async def get_tools_async(llm, sync=False):
   return tools
 
 
-def get_tools(llm, sync=False):
-  loop = asyncio.new_event_loop()
-  tools = loop.run_until_complete(get_tools_async(llm, sync))
-  loop.close()
-  return tools
+# def get_tools(llm, sync=False):
+#   loop = asyncio.new_event_loop()
+#   tools = loop.run_until_complete(get_tools_async(llm, sync))
+#   loop.close()
+#   return tools
 
 
 ################# TOOLS ##################

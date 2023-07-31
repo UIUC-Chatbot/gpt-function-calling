@@ -39,8 +39,6 @@ langchain.debug = True
 VERBOSE = True
 
 
-async def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
-
 # async def async_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
 # '''WORK IN PROGRESS'''
 #   agent_chain = initialize_agent(
@@ -87,12 +85,12 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
   response = agent_chain.run(input=prompt)
   print(response)
 
-if __name__ == "__main__":
-  # LLM
-  llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=20, request_timeout=60 * 3)  # type: ignore
+# if __name__ == "__main__":
+#   # LLM
+#   llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=20, request_timeout=60 * 3)  # type: ignore
 
-  # TOOLS
-  tools = get_tools(llm, sync=True)
+#   # TOOLS
+#   tools = get_tools(llm, sync=True)
 
 
 # async def main_async(llm, tools, memory, prompt):
@@ -102,11 +100,11 @@ if __name__ == "__main__":
 #   await main(llm=llm, tools=tools, memory=memory, prompt=prompt)
 
 
-def main_sync(llm, memory, prompt):
-  tools = get_tools(llm)
-  t = threading.Thread(target=run_in_new_thread, args=(main, llm, tools, memory, prompt))
-  t.start()
-  t.join()
+# def main_sync(llm, memory, prompt):
+#   tools = get_tools(llm)
+#   t = threading.Thread(target=run_in_new_thread, args=(main, llm, tools, memory, prompt))
+#   t.start()
+#   t.join()
 
 
 # agents.agent.LLMSingleActionAgent
@@ -124,14 +122,16 @@ if __name__ == "__main__":
   llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=3, request_timeout=60 * 3)  # type: ignore
 
   # TOOLS
-  tools = get_tools(llm)
+  tools = get_tools(llm, sync=True)
 
   # MEMORY
   chat_history = MessagesPlaceholder(variable_name="chat_history")
   memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
+  # can't do keyboard input
   # prompt = "Browse to https://lumetta.web.engr.illinois.edu/120-binary/120-binary.html and complete the first challenge using the keyboard to enter information, please."
 
-  prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
+  # prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
+  prompt = "Please find the Python docs for LangChain to help you write an example of a Retrieval QA chain, or anything like that which can answer questions against a corpus of documents. Return just a single example in Python, please."
 
-  main_sync(llm=llm, memory=memory, prompt=prompt)
+  main(llm=llm, tools=tools, memory=memory, prompt=prompt)
