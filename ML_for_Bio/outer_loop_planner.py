@@ -55,6 +55,8 @@ from langchain_experimental.plan_and_execute.planners.chat_planner import \
     load_chat_planner
 
 # TODO: https://docs.wandb.ai/guides/integrations/langchain
+os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
+os.environ["WANDB_PROJECT"] = "langchain-tracing" # optionally set your wandb settings or configs
 
 
 class OuterLoopPlanner:
