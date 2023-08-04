@@ -56,6 +56,7 @@ from langchain_experimental.plan_and_execute.planners.chat_planner import \
 
 # TODO: https://docs.wandb.ai/guides/integrations/langchain
 
+
 class OuterLoopPlanner:
 
   def __init__(self):
@@ -74,7 +75,7 @@ class OuterLoopPlanner:
     #     collection_name=os.getenv('QDRANT_LANGCHAIN_DOCS'),  # type: ignore
     #     embeddings=OpenAIEmbeddings())  # type: ignore
 
-    # write a function to search against the UIUC database 
+    # write a function to search against the UIUC database
     get_top_contexts_uiuc_chatbot(search_query='', course_name='', token_limit=8_000)
 
     print("after __init__")

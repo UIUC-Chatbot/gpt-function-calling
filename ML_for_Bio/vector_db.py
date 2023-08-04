@@ -27,7 +27,7 @@ def get_top_contexts_uiuc_chatbot(search_query: str, course_name: str, token_lim
     String: An error message with traceback.
   """
   print("in get_top_contexts_uiuc_chatbot()")
-  
+
   try:
     qdrant_client = QdrantClient(
         url=os.getenv('QDRANT_UIUC_CHATBOT_URL'),
@@ -37,17 +37,17 @@ def get_top_contexts_uiuc_chatbot(search_query: str, course_name: str, token_lim
     vectorstore = Qdrant(
         client=qdrant_client,
         collection_name=os.getenv('QDRANT_UIUC_CHATBOT_COLLECTION_NAME'),  # type: ignore
-        embeddings=OpenAIEmbeddings()) # type: ignore
+        embeddings=OpenAIEmbeddings())  # type: ignore
 
     # TODO: change back to 50+ once we have bigger qdrant DB.
-    top_n = 80 # HARD CODE TO ENSURE WE HIT THE MAX TOKENS
+    top_n = 80  # HARD CODE TO ENSURE WE HIT THE MAX TOKENS
     start_time_overall = time.monotonic()
     found_docs = vectorstore.similarity_search(search_query, k=top_n, filter={'course_name': course_name})
     if len(found_docs) == 0:
       return []
-    
+
     pre_prompt = "Please answer the following question. Use the context below, called your documents, only if it's helpful and don't use parts that are very irrelevant. It's good to quote from your documents directly, when you do always use Markdown footnotes for citations. Use react-markdown superscript to number the sources at the end of sentences (1, 2, 3...) and use react-markdown Footnotes to list the full document names for each number. Use ReactMarkdown aka 'react-markdown' formatting for super script citations, use semi-formal style. Feel free to say you don't know. \nHere's a few passages of the high quality documents:\n"
-    
+
     # count tokens at start and end, then also count each context.
     input_str = pre_prompt + '\n\nNow please respond to my query: ' + search_query
     token_counter, _ = count_tokens_and_cost(prompt=input_str)
@@ -61,7 +61,7 @@ def get_top_contexts_uiuc_chatbot(search_query: str, course_name: str, token_lim
         valid_docs.append(d)
       else:
         break
-    
+
     print(f"Total tokens: {token_counter} total docs: {len(found_docs)} num docs used: {len(valid_docs)}")
     print(f"Course: {course_name} ||| search_query: {search_query}")
     print(f"⏰ ^^ Runtime of getTopContexts: {(time.monotonic() - start_time_overall):.2f} seconds")
@@ -74,7 +74,9 @@ def get_top_contexts_uiuc_chatbot(search_query: str, course_name: str, token_lim
     return err
 
 
-def count_tokens_and_cost(prompt: str, completion: str = '', openai_model_name: str = "gpt-3.5-turbo"): # -> tuple[int, float] | tuple[int, float, int, float]:
+def count_tokens_and_cost(prompt: str,
+                          completion: str = '',
+                          openai_model_name: str = "gpt-3.5-turbo"):  # -> tuple[int, float] | tuple[int, float, int, float]:
   """
   Returns the number of tokens in a text string.
 
@@ -93,13 +95,13 @@ def count_tokens_and_cost(prompt: str, completion: str = '', openai_model_name: 
   """
   # encoding = tiktoken.encoding_for_model(openai_model_name)
   openai_model_name = openai_model_name.lower()
-  encoding = tiktoken.encoding_for_model("gpt-3.5-turbo") # I think they all use the same encoding
+  encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")  # I think they all use the same encoding
   prompt_cost = 0
   completion_cost = 0
-  
-  prompt_token_cost = 0 
+
+  prompt_token_cost = 0
   completion_token_cost = 0
-  
+
   if openai_model_name.startswith("gpt-3.5-turbo"):
     if "16k" in openai_model_name:
       prompt_token_cost: float = 0.003 / 1_000
@@ -108,7 +110,7 @@ def count_tokens_and_cost(prompt: str, completion: str = '', openai_model_name: 
       # 3.5-turbo regular (4k context)
       prompt_token_cost: float = 0.0015 / 1_000
       completion_token_cost: float = 0.002 / 1_000
-      
+
   elif openai_model_name.startswith("gpt-4"):
     if "32k" in openai_model_name:
       prompt_token_cost = 0.06 / 1_000
@@ -120,12 +122,12 @@ def count_tokens_and_cost(prompt: str, completion: str = '', openai_model_name: 
   elif openai_model_name.startswith("text-embedding-ada-002"):
     prompt_token_cost = 0.0001 / 1_000
     completion_token_cost = 0.0001 / 1_000
-  else: 
+  else:
     # no idea of cost
     print(f"NO IDEA OF COST, pricing not supported for model model: `{openai_model_name}`. (Defaulting to GPT-4 pricing...)")
     prompt_token_cost = 0.03 / 1_000
     completion_token_cost = 0.06 / 1_000
-  
+
   if completion == '':
     num_tokens_prompt: int = len(encoding.encode(prompt))
     prompt_cost = float(prompt_token_cost * num_tokens_prompt)
@@ -143,6 +145,7 @@ def count_tokens_and_cost(prompt: str, completion: str = '', openai_model_name: 
     completion_cost = float(completion_token_cost * num_tokens_completion)
     print("In the PROMPT & COMPLETION case")
     return num_tokens_prompt, prompt_cost, num_tokens_completion, completion_cost
+
 
 ## if name is main
 if __name__ == "__main__":
