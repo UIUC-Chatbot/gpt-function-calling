@@ -12,6 +12,7 @@ On the command line
 import asyncio
 import os
 import threading
+import token
 from typing import List, Sequence
 
 import langchain
@@ -36,6 +37,7 @@ from langchain.vectorstores import Qdrant
 from llama_hub.github_repo import GithubClient, GithubRepositoryReader
 from qdrant_client import QdrantClient
 from tools import get_shell_tool, get_tools
+from vector_db import get_top_contexts_uiuc_chatbot
 
 load_dotenv(override=True, dotenv_path='.env')
 
@@ -52,6 +54,7 @@ from langchain_experimental.plan_and_execute.executors.agent_executor import \
 from langchain_experimental.plan_and_execute.planners.chat_planner import \
     load_chat_planner
 
+# TODO: https://docs.wandb.ai/guides/integrations/langchain
 
 class OuterLoopPlanner:
 
@@ -65,18 +68,20 @@ class OuterLoopPlanner:
         collection_name=os.getenv('QDRANT_LANGCHAIN_DOCS'),  # type: ignore
         embeddings=OpenAIEmbeddings())  # type: ignore
 
-    print("Before creating vectorstore")
-    self.langchain_docs_vectorstore = Qdrant(
-        client=self.qdrant_client,
-        collection_name=os.getenv('QDRANT_LANGCHAIN_DOCS'),  # type: ignore
-        embeddings=OpenAIEmbeddings())  # type: ignore
+    # print("Before creating vectorstore")
+    # self.langchain_docs_vectorstore = Qdrant(
+    #     client=self.qdrant_client,
+    #     collection_name=os.getenv('QDRANT_LANGCHAIN_DOCS'),  # type: ignore
+    #     embeddings=OpenAIEmbeddings())  # type: ignore
+
+    # write a function to search against the UIUC database 
+    get_top_contexts_uiuc_chatbot(search_query='', course_name='', token_limit=8_000)
 
     print("after __init__")
     # todo: try babyagi
     # BabyAGI()
 
   def autogpt_babyagi(self, llm: BaseChatModel, tools: List[BaseTool], prompt: str, memory=None):
-
     # langchain_retriever = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4-0613'), chain_type="stuff", retriever=self.langchain_docs_vectorstore.as_retriever())
 
     autogpt = AutoGPT.from_llm_and_tools(
@@ -187,8 +192,7 @@ if __name__ == "__main__":
   # prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
   # prompt = "Please find the Python docs for LangChain to help you write an example of a Retrieval QA chain, or anything like that which can answer questions against a corpus of documents. Return just a single example in Python, please."
   # ✅ worked with both Langchain PlanExecuteAgents. But NOT AutoGPT because it struggled with the internet.
-  prompt = "Write an example of making parallel requests to an API with expentional backoff, or anything like that. Return just a single example in Python, please."
-  prompt = "Write an example of making parallel requests to an API with expentional backoff, or anything like that. Return just a single example in Python, please."
+  prompt = "Write an example of making parallel requests to an API with exponential backoff, or anything like that. Return just a single example in Python, please."
 
   # main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
