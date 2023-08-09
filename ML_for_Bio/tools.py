@@ -62,13 +62,13 @@ def get_tools(llm, sync=True):
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
   browser_tools = browser_toolkit.get_tools()
 
-  # HUMAN 
+  # HUMAN
   human_tools = load_tools(["human"], llm=llm, input_func=get_human_input)
   # SHELL
   shell = get_shell_tool()
 
   # GITHUB
-  github = GitHubAPIWrapper() # type: ignore
+  github = GitHubAPIWrapper()  # type: ignore
   toolkit = GitHubToolkit.from_github_api_wrapper(github)
   github_tools: list[BaseTool] = toolkit.get_tools()
 

@@ -30,14 +30,10 @@ from langchain.docstore.base import Docstore
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder
-from langchain.prompts.chat import (BaseMessagePromptTemplate,
-                                    ChatPromptTemplate,
-                                    HumanMessagePromptTemplate,
-                                    MessagesPlaceholder)
+from langchain.prompts.chat import (BaseMessagePromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder)
 from langchain.schema import AgentAction
 from langchain.schema.language_model import BaseLanguageModel
-from langchain.schema.messages import (AIMessage, BaseMessage, FunctionMessage,
-                                       SystemMessage)
+from langchain.schema.messages import (AIMessage, BaseMessage, FunctionMessage, SystemMessage)
 from langchain.tools.base import BaseTool
 from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
@@ -122,12 +118,10 @@ def openai_functions_agent(llm, tools):
   # extra_prompt_messages = list(BaseMessagePromptTemplate('''TODO'''))
   # extra_prompt_messages = 'things'
 
-  # todo: use this initialization function 
-  agent = initialize_agent(
+  # todo: use this initialization function
+  agent = initialize_agent()
 
-  )
-
-  prompt = OpenAIMultiFunctionsAgent.create_prompt(system_message=system_message, ) # extra_prompt_messages=extra_prompt_messages
+  prompt = OpenAIMultiFunctionsAgent.create_prompt(system_message=system_message,)  # extra_prompt_messages=extra_prompt_messages
   agent = OpenAIMultiFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
   agent.plan()
 
@@ -136,16 +130,15 @@ def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory,
   input = {'input': prompt}
   system_prompt = """"""
   PLANNER_SYSTEM_PROMPT = (
-    "Let's first understand the problem and devise a plan to solve the problem."
-    " Please output the plan starting with the header 'Plan:' "
-    "and then followed by a numbered list of steps. "
-    "Please make the plan the minimum number of steps required "
-    "to accurately complete the task. If the task is a question, "
-    "the final step should almost always be 'Given the above steps taken, "
-    "please respond to the users original question'. "
-    "If anything is majorly missing preventing you from being confident in the plan, please ask the human for clarification." # new
-    "At the end of your plan, say '<END_OF_PLAN>'"
-  )
+      "Let's first understand the problem and devise a plan to solve the problem."
+      " Please output the plan starting with the header 'Plan:' "
+      "and then followed by a numbered list of steps. "
+      "Please make the plan the minimum number of steps required "
+      "to accurately complete the task. If the task is a question, "
+      "the final step should almost always be 'Given the above steps taken, "
+      "please respond to the users original question'. "
+      "If anything is majorly missing preventing you from being confident in the plan, please ask the human for clarification."  # new
+      "At the end of your plan, say '<END_OF_PLAN>'")
 
   planner = load_chat_planner(llm)
   executor = load_agent_executor(
@@ -162,11 +155,11 @@ def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory,
   response = agent.run(input=input)
   print(f"👇FINAL ANSWER 👇\n{response}")
 
+
 def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
 
   # custom agent for debugging... but we can have multiple types of bugs. Code, knowing what to do... knowing what APIs to use.
   # lets focus on code debugging
-
 
   agent_chain = initialize_agent(
       tools=tools,
@@ -227,8 +220,9 @@ def trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> List[Tuple[
   print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
   return selected_steps
 
+
 def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> List[Tuple[AgentAction, str]]:
-    """
+  """
     Trim the history of Agent steps to fit within the token limit.
     If we're over the limit, start removing the logs from the oldest actions first. then remove the tool_input from the oldest actions. then remove the tool from the oldest actions. then remove the oldest actions entirely. To remove any of these, just set it as an empty string.
 
@@ -238,42 +232,43 @@ def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> Lis
     Returns:
         List[Tuple[AgentAction, str]]: A list of the most recent actions that fit within the token limit.
     """
-    def count_tokens(action: AgentAction) -> int:
-      return sum(count_tokens_and_cost(str(getattr(action, attr)))[0] for attr in ['tool', 'tool_input', 'log'])
 
-    token_limit = 4_000
+  def count_tokens(action: AgentAction) -> int:
+    return sum(count_tokens_and_cost(str(getattr(action, attr)))[0] for attr in ['tool', 'tool_input', 'log'])
+
+  token_limit = 4_000
+  total_tokens = sum(count_tokens(action) for action, _ in steps)
+
+  # Remove the logs if over the limit
+  if total_tokens > token_limit:
+    for action, _ in steps:
+      action.log = ''
+      total_tokens = sum(count_tokens(action) for action, _ in steps)
+      if total_tokens <= token_limit:
+        break
+
+  # Remove the tool_input if over the limit
+  if total_tokens > token_limit:
+    for action, _ in steps:
+      action.tool_input = ''
+      total_tokens = sum(count_tokens(action) for action, _ in steps)
+      if total_tokens <= token_limit:
+        break
+
+  # Remove the tool if over the limit
+  if total_tokens > token_limit:
+    for action, _ in steps:
+      action.tool = ''
+      total_tokens = sum(count_tokens(action) for action, _ in steps)
+      if total_tokens <= token_limit:
+        break
+
+  # Remove the oldest actions if over the limit
+  while total_tokens > token_limit:
+    steps.pop(0)
     total_tokens = sum(count_tokens(action) for action, _ in steps)
 
-    # Remove the logs if over the limit
-    if total_tokens > token_limit:
-        for action, _ in steps:
-            action.log = ''
-            total_tokens = sum(count_tokens(action) for action, _ in steps)
-            if total_tokens <= token_limit:
-                break
-
-    # Remove the tool_input if over the limit
-    if total_tokens > token_limit:
-        for action, _ in steps:
-            action.tool_input = ''
-            total_tokens = sum(count_tokens(action) for action, _ in steps)
-            if total_tokens <= token_limit:
-                break
-
-    # Remove the tool if over the limit
-    if total_tokens > token_limit:
-        for action, _ in steps:
-            action.tool = ''
-            total_tokens = sum(count_tokens(action) for action, _ in steps)
-            if total_tokens <= token_limit:
-                break
-
-    # Remove the oldest actions if over the limit
-    while total_tokens > token_limit:
-        steps.pop(0)
-        total_tokens = sum(count_tokens(action) for action, _ in steps)
-
-    return steps
+  return steps
 
 
 # agents.agent.LLMSingleActionAgent
