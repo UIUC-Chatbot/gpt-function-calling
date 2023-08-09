@@ -1,14 +1,17 @@
 import asyncio
 import os
+from typing import List
 
 import langchain
 from dotenv import load_dotenv
 from langchain.agents import AgentType, Tool, initialize_agent, load_tools
 from langchain.agents.agent_toolkits import PlayWrightBrowserToolkit
+from langchain.agents.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain.agents.react.base import DocstoreExplorer
 from langchain.callbacks import HumanApprovalCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore.base import Docstore
+from langchain.llms import OpenAI, OpenAIChat
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder
 from langchain.tools import ShellTool
@@ -17,6 +20,7 @@ from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
 from langchain.tools.playwright.utils import create_async_playwright_browser
 from langchain.tools.python.tool import PythonREPLTool
+from langchain.utilities.github import GitHubAPIWrapper
 from llama_hub.github_repo import GithubClient, GithubRepositoryReader
 
 load_dotenv(override=True, dotenv_path='../.env')
@@ -45,29 +49,34 @@ VERBOSE = True
 
 #   tools: list[BaseTool] = browser_tools + human_tools + [shell]
 #   return tools
-def get_tools(llm, sync=False):
+def get_tools(llm, sync=True):
   '''Main function to assemble tools for ML for Bio project.'''
+  # WEB BROWSER
   browser_toolkit = None
   if sync:
     sync_browser = create_sync_playwright_browser()
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(sync_browser=sync_browser)
   else:
-    # TODO work in progress... not functional yet.
+    # TODO async is work in progress... not functional yet.
     async_browser = create_async_playwright_browser()
     browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-
   browser_tools = browser_toolkit.get_tools()
+
+  # HUMAN 
   human_tools = load_tools(["human"], llm=llm, input_func=get_human_input)
+  # SHELL
   shell = get_shell_tool()
-  tools: list[BaseTool] = human_tools + browser_tools + [shell] + [PythonREPLTool()]
+
+  # GITHUB
+  github = GitHubAPIWrapper() # type: ignore
+  toolkit = GitHubToolkit.from_github_api_wrapper(github)
+  github_tools: list[BaseTool] = toolkit.get_tools()
+
+  # TODO: Agent to search docs and pull out helpful sections, code & examples
+  # docs_agent = get_docstore_agent()
+
+  tools: list[BaseTool] = human_tools + browser_tools + [shell] + [PythonREPLTool()] + github_tools
   return tools
-
-
-# def get_tools(llm, sync=False):
-#   loop = asyncio.new_event_loop()
-#   tools = loop.run_until_complete(get_tools_async(llm, sync))
-#   loop.close()
-#   return tools
 
 
 ################# TOOLS ##################
@@ -107,6 +116,3 @@ def get_human_input() -> str:
       break
     contents.append(line)
   return "\n".join(contents)
-
-  # Agent to search docs and pull out helpful sections, code & examples
-  docs_agent = get_docstore_agent()

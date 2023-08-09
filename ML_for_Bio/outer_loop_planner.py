@@ -13,13 +13,15 @@ import asyncio
 import os
 import threading
 import token
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 import langchain
 from agents import get_docstore_agent
 from dotenv import load_dotenv
 from langchain.agents import AgentType, Tool, initialize_agent, load_tools
 from langchain.agents.agent_toolkits import PlayWrightBrowserToolkit
+from langchain.agents.openai_functions_multi_agent.base import \
+    OpenAIMultiFunctionsAgent
 from langchain.agents.react.base import DocstoreExplorer
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
@@ -28,7 +30,14 @@ from langchain.docstore.base import Docstore
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder
+from langchain.prompts.chat import (BaseMessagePromptTemplate,
+                                    ChatPromptTemplate,
+                                    HumanMessagePromptTemplate,
+                                    MessagesPlaceholder)
+from langchain.schema import AgentAction
 from langchain.schema.language_model import BaseLanguageModel
+from langchain.schema.messages import (AIMessage, BaseMessage, FunctionMessage,
+                                       SystemMessage)
 from langchain.tools.base import BaseTool
 from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
@@ -37,7 +46,7 @@ from langchain.vectorstores import Qdrant
 from llama_hub.github_repo import GithubClient, GithubRepositoryReader
 from qdrant_client import QdrantClient
 from tools import get_shell_tool, get_tools
-from vector_db import get_top_contexts_uiuc_chatbot
+from vector_db import count_tokens_and_cost, get_top_contexts_uiuc_chatbot
 
 load_dotenv(override=True, dotenv_path='.env')
 
@@ -99,8 +108,45 @@ class OuterLoopPlanner:
     autogpt.run(goals=goals)
 
 
+def openai_functions_agent(llm, tools):
+  system_message = SystemMessage(content='''You debug broken code. Use JSON formatting to return the result. Always show before and after.
+  Format like this
+  # TODO steal from Aider format for before and after. 
+  filename_to_edit.file_extension
+  <<<<<<< ORIGINAL
+  buggy code
+  =======
+  fixed code
+  >>>>>>> UPDATED
+  ''')
+  # extra_prompt_messages = list(BaseMessagePromptTemplate('''TODO'''))
+  # extra_prompt_messages = 'things'
+
+  # todo: use this initialization function 
+  agent = initialize_agent(
+
+  )
+
+  prompt = OpenAIMultiFunctionsAgent.create_prompt(system_message=system_message, ) # extra_prompt_messages=extra_prompt_messages
+  agent = OpenAIMultiFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
+  agent.plan()
+
+
 def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
   input = {'input': prompt}
+  system_prompt = """"""
+  PLANNER_SYSTEM_PROMPT = (
+    "Let's first understand the problem and devise a plan to solve the problem."
+    " Please output the plan starting with the header 'Plan:' "
+    "and then followed by a numbered list of steps. "
+    "Please make the plan the minimum number of steps required "
+    "to accurately complete the task. If the task is a question, "
+    "the final step should almost always be 'Given the above steps taken, "
+    "please respond to the users original question'. "
+    "If anything is majorly missing preventing you from being confident in the plan, please ask the human for clarification." # new
+    "At the end of your plan, say '<END_OF_PLAN>'"
+  )
+
   planner = load_chat_planner(llm)
   executor = load_agent_executor(
       llm=llm,
@@ -115,19 +161,13 @@ def experimental_main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory,
   )
   response = agent.run(input=input)
   print(f"👇FINAL ANSWER 👇\n{response}")
-  # handle_parsing_errors=True,  # or pass a function that accepts the error and returns a string
-  # max_iterations=30,
-  # max_execution_time=None,
-  # early_stopping_method='generate',
-  # memory=memory,
-  # trim_intermediate_steps=3, # TODO: Investigate this undocumented feature
-  # agent_kwargs={
-  #     "memory_prompts": [chat_history],
-  #     "input_variables": ["input", "agent_scratchpad", "chat_history"]
-  # })
-
 
 def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str):
+
+  # custom agent for debugging... but we can have multiple types of bugs. Code, knowing what to do... knowing what APIs to use.
+  # lets focus on code debugging
+
+
   agent_chain = initialize_agent(
       tools=tools,
       llm=llm,
@@ -138,7 +178,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
       max_execution_time=None,
       early_stopping_method='generate',
       memory=memory,
-      trim_intermediate_steps=3,  # TODO: Investigate this undocumented feature
+      trim_intermediate_steps=trim_intermediate_steps,
       agent_kwargs={
           "memory_prompts": [chat_history],
           "input_variables": ["input", "agent_scratchpad", "chat_history"]
@@ -149,24 +189,92 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
   print(f"👇FINAL ANSWER 👇\n{response}")
 
 
-# if __name__ == "__main__":
-#   # LLM
-#   llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=20, request_timeout=60 * 3)  # type: ignore
+def trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> List[Tuple[AgentAction, str]]:
+  """
+  Trim the history of Agent steps to fit within the token limit.
 
-#   # TOOLS
-#   tools = get_tools(llm, sync=True)
+  AgentAction has: 
+  tool: str
+      The name of the Tool to execute.
+  tool_input: Union[str, dict]
+      The input to pass in to the Tool.
+  log: str
 
-# async def main_async(llm, tools, memory, prompt):
-#   async_browser = await create_async_playwright_browser()
-#   browser_toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-#   tools += browser_toolkit.get_tools()
-#   await main(llm=llm, tools=tools, memory=memory, prompt=prompt)
+  Args:
+      steps (List[Tuple[AgentAction, str]]): A list of agent actions and associated strings.
 
-# def main_sync(llm, memory, prompt):
-#   tools = get_tools(llm)
-#   t = threading.Thread(target=run_in_new_thread, args=(main, llm, tools, memory, prompt))
-#   t.start()
-#   t.join()
+  Returns:
+      List[Tuple[AgentAction, str]]: A list of the most recent actions that fit within the token limit.
+  """
+
+  token_limit = 4_000
+  total_tokens = 0
+  selected_steps = []
+
+  for step in reversed(steps):
+    action, _ = step
+    tokens_in_action = sum(count_tokens_and_cost(str(getattr(action, attr)))[0] for attr in ['tool', 'tool_input', 'log'])
+    total_tokens += tokens_in_action
+
+    if total_tokens <= token_limit:
+      selected_steps.insert(0, step)
+    else:
+      break
+
+  print("In trim_latest_3_actions!! 👇👇👇👇👇👇👇👇👇👇👇👇👇👇 ")
+  print(selected_steps)
+  print("Tokens used: ", total_tokens)
+  print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
+  return selected_steps
+
+def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> List[Tuple[AgentAction, str]]:
+    """
+    Trim the history of Agent steps to fit within the token limit.
+    If we're over the limit, start removing the logs from the oldest actions first. then remove the tool_input from the oldest actions. then remove the tool from the oldest actions. then remove the oldest actions entirely. To remove any of these, just set it as an empty string.
+
+    Args:
+        steps (List[Tuple[AgentAction, str]]): A list of agent actions and associated strings.
+
+    Returns:
+        List[Tuple[AgentAction, str]]: A list of the most recent actions that fit within the token limit.
+    """
+    def count_tokens(action: AgentAction) -> int:
+      return sum(count_tokens_and_cost(str(getattr(action, attr)))[0] for attr in ['tool', 'tool_input', 'log'])
+
+    token_limit = 4_000
+    total_tokens = sum(count_tokens(action) for action, _ in steps)
+
+    # Remove the logs if over the limit
+    if total_tokens > token_limit:
+        for action, _ in steps:
+            action.log = ''
+            total_tokens = sum(count_tokens(action) for action, _ in steps)
+            if total_tokens <= token_limit:
+                break
+
+    # Remove the tool_input if over the limit
+    if total_tokens > token_limit:
+        for action, _ in steps:
+            action.tool_input = ''
+            total_tokens = sum(count_tokens(action) for action, _ in steps)
+            if total_tokens <= token_limit:
+                break
+
+    # Remove the tool if over the limit
+    if total_tokens > token_limit:
+        for action, _ in steps:
+            action.tool = ''
+            total_tokens = sum(count_tokens(action) for action, _ in steps)
+            if total_tokens <= token_limit:
+                break
+
+    # Remove the oldest actions if over the limit
+    while total_tokens > token_limit:
+        steps.pop(0)
+        total_tokens = sum(count_tokens(action) for action, _ in steps)
+
+    return steps
+
 
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation
@@ -195,11 +303,13 @@ if __name__ == "__main__":
   # prompt = "Please find the Python docs for LangChain, then write a function that takes a list of strings and returns a list of the lengths of those strings."
   # prompt = "Please find the Python docs for LangChain to help you write an example of a Retrieval QA chain, or anything like that which can answer questions against a corpus of documents. Return just a single example in Python, please."
   # ✅ worked with both Langchain PlanExecuteAgents. But NOT AutoGPT because it struggled with the internet.
-  prompt = "Write an example of making parallel requests to an API with exponential backoff, or anything like that. Return just a single example in Python, please."
+  # prompt = "Write an example of making parallel requests to an API with exponential backoff, or anything like that. Return just a single example in Python, please."
+  # prompt = "Close the issue about the README.md because it was solved by the most recent PR. When you close the issue, reference the PR in the issue comment, please."
+  # prompt = "Merge the PR about the web scraping if it looks good to you"
+  prompt = "Implement the latest issue about a standard RNA Seq pipeline. Please open a PR with the code changes, do the best you can."
 
-  # main(llm=llm, tools=tools, memory=memory, prompt=prompt)
+  main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
-  # vectorstore
 
-  o = OuterLoopPlanner()
-  o.autogpt_babyagi(llm=llm, tools=tools, prompt=prompt)
+  # o = OuterLoopPlanner()
+  # o.autogpt_babyagi(llm=llm, tools=tools, prompt=prompt)

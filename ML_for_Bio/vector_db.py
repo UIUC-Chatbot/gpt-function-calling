@@ -131,19 +131,16 @@ def count_tokens_and_cost(prompt: str,
   if completion == '':
     num_tokens_prompt: int = len(encoding.encode(prompt))
     prompt_cost = float(prompt_token_cost * num_tokens_prompt)
-    print("In the PROMPT ONLY case")
     return num_tokens_prompt, prompt_cost
   elif prompt == '':
     num_tokens_completion: int = len(encoding.encode(completion))
     completion_cost = float(completion_token_cost * num_tokens_completion)
-    print("In the COMPLETION ONLY case")
     return num_tokens_completion, completion_cost
   else:
     num_tokens_prompt: int = len(encoding.encode(prompt))
     num_tokens_completion: int = len(encoding.encode(completion))
     prompt_cost = float(prompt_token_cost * num_tokens_prompt)
     completion_cost = float(completion_token_cost * num_tokens_completion)
-    print("In the PROMPT & COMPLETION case")
     return num_tokens_prompt, prompt_cost, num_tokens_completion, completion_cost
 
 
