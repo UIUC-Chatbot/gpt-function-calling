@@ -28,12 +28,17 @@ from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.docstore.base import Docstore
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import (ConversationBufferMemory,
+                              ConversationSummaryBufferMemory)
 from langchain.prompts import MessagesPlaceholder
-from langchain.prompts.chat import (BaseMessagePromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder)
+from langchain.prompts.chat import (BaseMessagePromptTemplate,
+                                    ChatPromptTemplate,
+                                    HumanMessagePromptTemplate,
+                                    MessagesPlaceholder)
 from langchain.schema import AgentAction
 from langchain.schema.language_model import BaseLanguageModel
-from langchain.schema.messages import (AIMessage, BaseMessage, FunctionMessage, SystemMessage)
+from langchain.schema.messages import (AIMessage, BaseMessage, FunctionMessage,
+                                       SystemMessage)
 from langchain.tools.base import BaseTool
 from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
@@ -171,7 +176,7 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
       max_execution_time=None,
       early_stopping_method='generate',
       memory=memory,
-      trim_intermediate_steps=trim_intermediate_steps,
+      trim_intermediate_steps=fancier_trim_intermediate_steps,
       agent_kwargs={
           "memory_prompts": [chat_history],
           "input_variables": ["input", "agent_scratchpad", "chat_history"]
@@ -268,6 +273,10 @@ def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> Lis
     steps.pop(0)
     total_tokens = sum(count_tokens(action) for action, _ in steps)
 
+  print("In fancier_trim_latest_3_actions!! 👇👇👇👇👇👇👇👇👇👇👇👇👇👇 ")
+  print(steps)
+  print("Tokens used: ", total_tokens)
+  print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
   return steps
 
 
@@ -284,13 +293,15 @@ def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> Lis
 if __name__ == "__main__":
   # LLM
   llm = ChatOpenAI(temperature=0, model="gpt-4-0613", max_retries=3, request_timeout=60 * 3)  # type: ignore
+  summarizer_llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0613", max_retries=3, request_timeout=60 * 3)  # type: ignore
 
   # TOOLS
   tools = get_tools(llm, sync=True)
 
   # MEMORY
   chat_history = MessagesPlaceholder(variable_name="chat_history")
-  memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+  # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+  memory = ConversationSummaryBufferMemory(memory_key="chat_history", return_messages=True, llm=summarizer_llm, max_token_limit=2_000)
 
   # can't do keyboard input
   # prompt = "Browse to https://lumetta.web.engr.illinois.edu/120-binary/120-binary.html and complete the first challenge using the keyboard to enter information, please."
@@ -301,7 +312,9 @@ if __name__ == "__main__":
   # prompt = "Write an example of making parallel requests to an API with exponential backoff, or anything like that. Return just a single example in Python, please."
   # prompt = "Close the issue about the README.md because it was solved by the most recent PR. When you close the issue, reference the PR in the issue comment, please."
   # prompt = "Merge the PR about the web scraping if it looks good to you"
-  prompt = "Implement the latest issue about a standard RNA Seq pipeline. Please open a PR with the code changes, do the best you can."
+  # prompt = "Implement the latest issue about a standard RNA Seq pipeline. Please open a PR with the code changes, do the best you can."
+  # prompt = "Implement the latest issue about a Integral function in C. Please open a PR with the code changes, do the best you can."
+  prompt = "Check out PR7 and finish the implementation, but make sure to submit your work in a fresh new PR."
 
   main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
