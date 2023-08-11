@@ -48,7 +48,6 @@ from vector_db import count_tokens_and_cost, get_top_contexts_uiuc_chatbot
 
 load_dotenv(override=True, dotenv_path='.env')
 
-
 from langchain_experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain_experimental.autonomous_agents.baby_agi import BabyAGI
 from langchain_experimental.plan_and_execute.agent_executor import \
@@ -61,7 +60,7 @@ from langchain_experimental.plan_and_execute.planners.chat_planner import \
 os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution of the program, set to "true"
 langchain.debug = False  # True for more detailed logs
 VERBOSE = True
-os.environ["LANGCHAIN_WANDB_TRACING"] = "true" # TODO: https://docs.wandb.ai/guides/integrations/langchain
+os.environ["LANGCHAIN_WANDB_TRACING"] = "true"  # TODO: https://docs.wandb.ai/guides/integrations/langchain
 os.environ["WANDB_PROJECT"] = "langchain-tracing"  # optionally set your wandb settings or configs
 
 
@@ -163,9 +162,8 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
   # lets focus on code debugging
 
   # 1. Edit PRs Bot (needs to be given the branch name, and just works on that branch)
-    # Needs some global variable for branch name, inside the GithubAPI Wrapper. Do this when enstantiating it. 
+  # Needs some global variable for branch name, inside the GithubAPI Wrapper. Do this when enstantiating it.
   # 2. Create PRs Bot (basically standard, with a prompt of "read latest issue and implement as a new PR")
-
 
   agent_chain = initialize_agent(
       tools=tools,
@@ -280,6 +278,7 @@ def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> Lis
   # print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
   return steps
 
+
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation
 # 2. collect relevant code files from github
@@ -315,7 +314,6 @@ if __name__ == "__main__":
   # prompt = "Implement the latest issue about a standard RNA Seq pipeline. Please open a PR with the code changes, do the best you can."
   prompt = "Implement the latest issue about a Integral function in C. Please open a PR with the code changes, do the best you can."
   # prompt = "Read PR 7 and finish the implementation that began there. Create the files with the finished implementation and create a new PR to submit your work."
-
 
   main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
