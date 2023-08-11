@@ -7,3 +7,4 @@ qdrant-client
 python-dotenv
 codeinterpreterapi
 pygithub
+arxiv
