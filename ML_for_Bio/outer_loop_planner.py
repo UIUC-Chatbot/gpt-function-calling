@@ -20,6 +20,7 @@ from agents import get_docstore_agent
 from dotenv import load_dotenv
 from langchain.agents import AgentType, Tool, initialize_agent, load_tools
 from langchain.agents.agent_toolkits import PlayWrightBrowserToolkit
+from langchain.agents.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain.agents.openai_functions_multi_agent.base import \
     OpenAIMultiFunctionsAgent
 from langchain.agents.react.base import DocstoreExplorer
@@ -38,6 +39,7 @@ from langchain.tools.base import BaseTool
 from langchain.tools.playwright.utils import \
     create_sync_playwright_browser  # A synchronous browser is available, though it isn't compatible with jupyter.
 from langchain.tools.playwright.utils import create_async_playwright_browser
+from langchain.utilities.github import GitHubAPIWrapper
 from langchain.vectorstores import Qdrant
 from llama_hub.github_repo import GithubClient, GithubRepositoryReader
 from qdrant_client import QdrantClient
@@ -46,9 +48,6 @@ from vector_db import count_tokens_and_cost, get_top_contexts_uiuc_chatbot
 
 load_dotenv(override=True, dotenv_path='.env')
 
-os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution of the program, set to "true"
-langchain.debug = True
-VERBOSE = True
 
 from langchain_experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain_experimental.autonomous_agents.baby_agi import BabyAGI
@@ -59,8 +58,10 @@ from langchain_experimental.plan_and_execute.executors.agent_executor import \
 from langchain_experimental.plan_and_execute.planners.chat_planner import \
     load_chat_planner
 
-# TODO: https://docs.wandb.ai/guides/integrations/langchain
-os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
+os.environ["LANGCHAIN_TRACING"] = "true"  # If you want to trace the execution of the program, set to "true"
+langchain.debug = False  # True for more detailed logs
+VERBOSE = True
+os.environ["LANGCHAIN_WANDB_TRACING"] = "true" # TODO: https://docs.wandb.ai/guides/integrations/langchain
 os.environ["WANDB_PROJECT"] = "langchain-tracing"  # optionally set your wandb settings or configs
 
 
@@ -160,6 +161,11 @@ def main(llm: BaseLanguageModel, tools: Sequence[BaseTool], memory, prompt: str)
 
   # custom agent for debugging... but we can have multiple types of bugs. Code, knowing what to do... knowing what APIs to use.
   # lets focus on code debugging
+
+  # 1. Edit PRs Bot (needs to be given the branch name, and just works on that branch)
+    # Needs some global variable for branch name, inside the GithubAPI Wrapper. Do this when enstantiating it. 
+  # 2. Create PRs Bot (basically standard, with a prompt of "read latest issue and implement as a new PR")
+
 
   agent_chain = initialize_agent(
       tools=tools,
@@ -268,12 +274,11 @@ def fancier_trim_intermediate_steps(steps: List[Tuple[AgentAction, str]]) -> Lis
     steps.pop(0)
     total_tokens = sum(count_tokens(action) for action, _ in steps)
 
-  print("In fancier_trim_latest_3_actions!! 👇👇👇👇👇👇👇👇👇👇👇👇👇👇 ")
-  print(steps)
-  print("Tokens used: ", total_tokens)
-  print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
+  # print("In fancier_trim_latest_3_actions!! 👇👇👇👇👇👇👇👇👇👇👇👇👇👇 ")
+  # print(steps)
+  # print("Tokens used: ", total_tokens)
+  # print("👆👆👆👆👆👆👆👆👆👆👆👆👆")
   return steps
-
 
 # agents.agent.LLMSingleActionAgent
 # 1. collect relevant code documentation
@@ -308,8 +313,9 @@ if __name__ == "__main__":
   # prompt = "Close the issue about the README.md because it was solved by the most recent PR. When you close the issue, reference the PR in the issue comment, please."
   # prompt = "Merge the PR about the web scraping if it looks good to you"
   # prompt = "Implement the latest issue about a standard RNA Seq pipeline. Please open a PR with the code changes, do the best you can."
-  # prompt = "Implement the latest issue about a Integral function in C. Please open a PR with the code changes, do the best you can."
-  prompt = "Check out PR7 and finish the implementation, but make sure to submit your work in a fresh new PR."
+  prompt = "Implement the latest issue about a Integral function in C. Please open a PR with the code changes, do the best you can."
+  # prompt = "Read PR 7 and finish the implementation that began there. Create the files with the finished implementation and create a new PR to submit your work."
+
 
   main(llm=llm, tools=tools, memory=memory, prompt=prompt)
   # experimental_main(llm=llm, tools=tools, memory=memory, prompt=prompt)
